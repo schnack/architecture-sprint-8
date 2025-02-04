@@ -52,4 +52,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    environment:
+      API_KEYCLOAK_URL: http://keycloak:8080
+      API_KEYCLOAK_REALM: reports-realm
     restart: always

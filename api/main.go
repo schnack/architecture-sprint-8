@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/google/uuid"
 	"log"
@@ -80,12 +81,19 @@ func reports(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := verifier.Verify(context.Background(), parts[1])
+	provider, err := oidc.NewProvider(context.Background(), fmt.Sprintf("%s/realms/%s", os.Getenv("API_KEYCLOAK_URL"), os.Getenv("API_KEYCLOAK_REALM")))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	t, err := provider.Verifier(&oidc.Config{ClientID: "reports-api", SkipClientIDCheck: true, SkipIssuerCheck: true}).Verify(context.Background(), parts[1])
 	if err != nil {
 		slog.Error(err.Error())
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
 	user := new(JwtJson)
 	if err := t.Claims(user); err != nil {
 		slog.Error(err.Error())
@@ -125,18 +133,8 @@ func reports(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	configURL := "http://keycloak:8080/realms/reports-realm"
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
-
-	provider, err := oidc.NewProvider(ctx, configURL)
-	if err != nil {
-		panic(err)
-	}
-
-	// SkipIssuerCheck = true, потому что для обращения к keycloak внутри контейнера не можем использовать localhost
-	verifier = provider.Verifier(&oidc.Config{ClientID: "reports-api", SkipClientIDCheck: true, SkipIssuerCheck: true})
 
 	slog.InfoContext(ctx, "Starting API")
 
