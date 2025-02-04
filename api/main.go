@@ -54,6 +54,24 @@ func reports(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+	user := new(JwtJson)
+	if err := t.Claims(user); err != nil {
+		slog.Error(err.Error())
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	isAccess := false
+	for _, role := range user.RealmAccess.Roles {
+		if role == "prothetic_user" {
+			isAccess = true
+			break
+		}
+	}
+	if isAccess == false {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
@@ -97,4 +115,35 @@ func main() {
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
 
+}
+
+type JwtJson struct {
+	Exp            int      `json:"exp"`
+	Iat            int      `json:"iat"`
+	AuthTime       int      `json:"auth_time"`
+	Jti            string   `json:"jti"`
+	Iss            string   `json:"iss"`
+	Sub            string   `json:"sub"`
+	Typ            string   `json:"typ"`
+	Azp            string   `json:"azp"`
+	Nonce          string   `json:"nonce"`
+	SessionState   string   `json:"session_state"`
+	Acr            string   `json:"acr"`
+	AllowedOrigins []string `json:"allowed-origins"`
+	RealmAccess    struct {
+		Roles []string `json:"roles"`
+	} `json:"realm_access"`
+	Scope             string `json:"scope"`
+	Sid               string `json:"sid"`
+	EmailVerified     bool   `json:"email_verified"`
+	Name              string `json:"name"`
+	PreferredUsername string `json:"preferred_username"`
+	GivenName         string `json:"given_name"`
+	FamilyName        string `json:"family_name"`
+	Email             string `json:"email"`
+	Header            struct {
+		Alg string `json:"alg"`
+		Typ string `json:"typ"`
+		Kid string `json:"kid"`
+	} `json:"header"`
 }
