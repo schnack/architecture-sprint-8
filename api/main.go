@@ -14,15 +14,37 @@ import (
 	"strings"
 )
 
-func index(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL.String())
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization")
+var verifier *oidc.IDTokenVerifier
 
-	w.Write([]byte(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Главная страница</title></head><body>Hello</body></html`))
-	w.WriteHeader(http.StatusOK)
+type JwtJson struct {
+	Exp            int      `json:"exp"`
+	Iat            int      `json:"iat"`
+	AuthTime       int      `json:"auth_time"`
+	Jti            string   `json:"jti"`
+	Iss            string   `json:"iss"`
+	Sub            string   `json:"sub"`
+	Typ            string   `json:"typ"`
+	Azp            string   `json:"azp"`
+	Nonce          string   `json:"nonce"`
+	SessionState   string   `json:"session_state"`
+	Acr            string   `json:"acr"`
+	AllowedOrigins []string `json:"allowed-origins"`
+	RealmAccess    struct {
+		Roles []string `json:"roles"`
+	} `json:"realm_access"`
+	Scope             string `json:"scope"`
+	Sid               string `json:"sid"`
+	EmailVerified     bool   `json:"email_verified"`
+	Name              string `json:"name"`
+	PreferredUsername string `json:"preferred_username"`
+	GivenName         string `json:"given_name"`
+	FamilyName        string `json:"family_name"`
+	Email             string `json:"email"`
+	Header            struct {
+		Alg string `json:"alg"`
+		Typ string `json:"typ"`
+		Kid string `json:"kid"`
+	} `json:"header"`
 }
 
 type Report struct {
@@ -30,6 +52,17 @@ type Report struct {
 	Sensor1 int    `json:"sensor1"`
 	Sensor2 int    `json:"sensor2"`
 	Sensor3 int    `json:"sensor3"`
+}
+
+func index(w http.ResponseWriter, r *http.Request) {
+	log.Println(r.URL.String())
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization")
+
+	w.Write([]byte(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Home</title></head><body>Hello</body></html`))
+	w.WriteHeader(http.StatusOK)
 }
 
 func reports(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +80,6 @@ func reports(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO Првоерять роль!!!
 	t, err := verifier.Verify(context.Background(), parts[1])
 	if err != nil {
 		slog.Error(err.Error())
@@ -91,8 +123,6 @@ func reports(w http.ResponseWriter, r *http.Request) {
 
 }
 
-var verifier *oidc.IDTokenVerifier
-
 func main() {
 
 	configURL := "http://keycloak:8080/realms/reports-realm"
@@ -115,35 +145,4 @@ func main() {
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
 
-}
-
-type JwtJson struct {
-	Exp            int      `json:"exp"`
-	Iat            int      `json:"iat"`
-	AuthTime       int      `json:"auth_time"`
-	Jti            string   `json:"jti"`
-	Iss            string   `json:"iss"`
-	Sub            string   `json:"sub"`
-	Typ            string   `json:"typ"`
-	Azp            string   `json:"azp"`
-	Nonce          string   `json:"nonce"`
-	SessionState   string   `json:"session_state"`
-	Acr            string   `json:"acr"`
-	AllowedOrigins []string `json:"allowed-origins"`
-	RealmAccess    struct {
-		Roles []string `json:"roles"`
-	} `json:"realm_access"`
-	Scope             string `json:"scope"`
-	Sid               string `json:"sid"`
-	EmailVerified     bool   `json:"email_verified"`
-	Name              string `json:"name"`
-	PreferredUsername string `json:"preferred_username"`
-	GivenName         string `json:"given_name"`
-	FamilyName        string `json:"family_name"`
-	Email             string `json:"email"`
-	Header            struct {
-		Alg string `json:"alg"`
-		Typ string `json:"typ"`
-		Kid string `json:"kid"`
-	} `json:"header"`
 }
