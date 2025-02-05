@@ -5,6 +5,7 @@ const ReportPage: React.FC = () => {
   const { keycloak, initialized } = useKeycloak();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   const downloadReport = async () => {
     if (!keycloak?.token) {
@@ -21,6 +22,12 @@ const ReportPage: React.FC = () => {
           'Authorization': `Bearer ${keycloak.token}`
         }
       });
+
+      if (response.ok){
+        setMessage(JSON.stringify(await response.json(), null, 2))
+      }else{
+        setError(response.statusText)
+      }
 
       
     } catch (err) {
@@ -61,6 +68,14 @@ const ReportPage: React.FC = () => {
         >
           {loading ? 'Generating Report...' : 'Download Report'}
         </button>
+
+        {message && (
+            <div className="mt-4 p-4 bg-green-100 text-green-700 rounded">
+              <pre>
+                 {message}
+              </pre>
+            </div>
+        )}
 
         {error && (
           <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">
